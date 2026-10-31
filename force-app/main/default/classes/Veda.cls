@@ -1,10 +1,11 @@
 //@istest
 public class Veda {
    // @istest
+//added somethings
     public static void A(){
     ware_House__c h=new  ware_House__c();
     h.Name ='kadapa';
-    h.Stock_Availability__c=false;
+    h.Stock_Availability__c=true;
    h.Manager_email__c='sai321@gmail.com';
         insert h;
         system.debug(h);
