@@ -13,6 +13,7 @@ public class Veda {
         insert h;
         system.debug(h);
     }
+//hello new man
 public integer add(integer a,integer b){
   return a+b;
 }
