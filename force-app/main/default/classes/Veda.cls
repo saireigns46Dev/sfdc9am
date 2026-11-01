@@ -9,5 +9,8 @@ public class Veda {
         insert h;
         system.debug(h);
     }
+public integer add(integer a,integer b){
+  return a+b;
+}
   
 }
