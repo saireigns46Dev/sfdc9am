@@ -1,6 +1,10 @@
 //@istest
 public class Veda {
    // @istest
+
+
+//added somethings special tooo
+
     public static void A(){
     ware_House__c h=new  ware_House__c();
     h.Name ='kadapa';
@@ -9,5 +13,8 @@ public class Veda {
         insert h;
         system.debug(h);
     }
+public integer add(integer a,integer b){
+  return a+b;
+}
   
 }
