@@ -1,6 +1,7 @@
 //@istest
 public class Veda {
    // @istest
+//added somethings special tooo
     public static void A(){
     ware_House__c h=new  ware_House__c();
     h.Name ='kadapa';
