@@ -14,6 +14,7 @@ public class Veda {
         system.debug(h);
     }
 //hello new man
+//hello new man
 public integer add(integer a,integer b){
   return a+b;
 }
