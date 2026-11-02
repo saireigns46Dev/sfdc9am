@@ -9,7 +9,7 @@ public class Ac1 {
         a.Phone='8603261910';
         a.Rating='cold';
         Ac2.add(a);
-        
+       //added nw 
         Account A5=new Account();
         A5.Name='mikeL ';
         //a.id='001fj00001JnzQKAAZ';
