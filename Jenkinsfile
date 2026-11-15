@@ -1,75 +1,100 @@
-#!groovy
+
 import groovy.json.JsonSlurperClassic
 
-node {
+pipeline {
+    agent any
 
-    def BUILD_NUMBER = env.BUILD_NUMBER
-    def RUN_ARTIFACT_DIR = "tests/${BUILD_NUMBER}"
+    stages {
 
-    def HUB_ORG = env.HUB_ORG_DH
-    def SFDC_HOST = env.SFDC_HOST_DH
-    def JWT_KEY_CRED_ID = env.JWT_CRED_ID_DH
-    def CONNECTED_APP_CONSUMER_KEY = env.CONNECTED_APP_CONSUMER_KEY_DH
+        stage('Validate Environment') {
+            steps {
+                script {
+                    if (!env.HUB_ORG_DH ||
+                        !env.SFDC_HOST_DH ||
+                        !env.JWT_CRED_ID_DH ||
+                        !env.CONNECTED_APP_CONSUMER_KEY_DH) {
 
-    // Validate environment variables
-    if (!HUB_ORG ||
-        !SFDC_HOST ||
-        !JWT_KEY_CRED_ID ||
-        !CONNECTED_APP_CONSUMER_KEY) {
+                        error('Salesforce environment variables are missing!')
+                    }
 
-        error 'Missing Salesforce environment variables'
-    }
+                    echo 'Salesforce environment variables loaded successfully'
+                }
 
-    println 'Salesforce environment variables loaded successfully'
+                bat '''
+                    where sf
+                    sf --version
+                '''
+            }
+        }
 
-    def toolbelt = tool 'toolbelt'
+        stage('Checkout Source') {
+            steps {
+                checkout scm
+                echo 'Source code checked out successfully'
+            }
+        }
 
-    stage('checkout source') {
-        checkout scm
-    }
+        stage('Authorize Salesforce Org') {
+            steps {
+                withCredentials([
+                    file(
+                        credentialsId: env.JWT_CRED_ID_DH,
+                        variable: 'jwt_key_file'
+                    )
+                ]) {
+                    script {
+                        def rc = bat(
+                            returnStatus: true,
+                            script: '''
+                                sf org login jwt ^
+                                --client-id "%CONNECTED_APP_CONSUMER_KEY_DH%" ^
+                                --username "%HUB_ORG_DH%" ^
+                                --jwt-key-file "%jwt_key_file%" ^
+                                --set-default-dev-hub ^
+                                --instance-url "%SFDC_HOST_DH%"
+                            '''
+                        )
 
-    withCredentials([
-        file(
-            credentialsId: JWT_KEY_CRED_ID,
-            variable: 'jwt_key_file'
-        )
-    ]) {
+                        if (rc != 0) {
+                            error('Salesforce org authorization failed!')
+                        }
+
+                        echo 'Salesforce org authorized successfully'
+                    }
+                }
+            }
+        }
 
         stage('Deploy Code') {
+            steps {
+                script {
+                    def deployStatus = bat(
+                        returnStatus: true,
+                        script: '''
+                            sf project deploy start ^
+                            --manifest manifest/package.xml ^
+                            --target-org "%HUB_ORG_DH%" ^
+                            --wait 30
+                        '''
+                    )
 
-            def rc
+                    if (deployStatus != 0) {
+                        error('Salesforce deployment failed!')
+                    }
 
-            if (isUnix()) {
-
-                rc = sh returnStatus: true,
-                    script: "${toolbelt} org login jwt --client-id ${CONNECTED_APP_CONSUMER_KEY} --username ${HUB_ORG} --jwt-key-file ${jwt_key_file} --set-default-dev-hub --instance-url ${SFDC_HOST}"
-
-            } else {
-
-                rc = bat returnStatus: true,
-                    script: "${toolbelt} org login jwt --client-id ${CONNECTED_APP_CONSUMER_KEY} --username ${HUB_ORG} --jwt-key-file ${jwt_key_file} --set-default-dev-hub --instance-url ${SFDC_HOST}"
+                    echo 'Salesforce deployment completed successfully'
+                }
             }
+        }
+    }
 
-            if (rc != 0) {
-                error 'Hub org authorization failed'
-            }
+    post {
+        success {
+            echo 'Pipeline completed successfully!'
+        }
 
-            println 'Salesforce authentication successful'
-
-            def rmsg
-
-            if (isUnix()) {
-
-                rmsg = sh returnStdout: true,
-                    script: "${toolbelt} project deploy start --manifest manifest/package.xml --target-org ${HUB_ORG}"
-
-            } else {
-
-                rmsg = bat returnStdout: true,
-                    script: "${toolbelt} project deploy start --manifest manifest/package.xml --target-org ${HUB_ORG}"
-            }
-
-            println rmsg
+        failure {
+            echo 'Pipeline failed. Check the console output.'
         }
     }
 }
