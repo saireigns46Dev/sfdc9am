@@ -7,4 +7,7 @@ public with sharing class cal {
         return a-b;
 
 }
+ public integer mul(integer a, integer b) {
+        return a*b;
+ }
 }
