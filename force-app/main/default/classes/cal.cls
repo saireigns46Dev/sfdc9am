@@ -13,4 +13,7 @@ public with sharing class cal {
   public integer div(integer a, integer b) {
         return a/b;
   }
+  public integer sub1(integer a, integer b) {
+        return a-b;
+  }
 }
